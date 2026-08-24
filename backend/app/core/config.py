@@ -2,9 +2,9 @@
 EcoPulse Backend Configuration
 Uses Pydantic BaseSettings to load and validate environment variables.
 """
-from typing import Optional
+from typing import Optional, Union, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -45,11 +45,26 @@ class Settings(BaseSettings):
     # Data Collection Interval (seconds)
     data_collection_interval: int = Field(default=30, alias="DATA_COLLECTION_INTERVAL")
 
-    # CORS Settings
-    cors_origins: list[str] = Field(
+    # CORS Settings — accepts string '*', comma-separated string, or list
+    cors_origins: Union[List[str], str] = Field(
         default=["*"],
         alias="CORS_ORIGINS",
     )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            if v.strip() == "*":
+                return ["*"]
+            if v.startswith("[") and v.endswith("]"):
+                import json
+                try:
+                    return json.loads(v)
+                except Exception:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     @property
     def has_database(self) -> bool:
