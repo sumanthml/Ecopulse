@@ -3,11 +3,21 @@ import { apiService } from '../services/api';
 import { Sensor } from '../types';
 import { Cpu, CheckCircle, AlertTriangle, XCircle, Wrench } from 'lucide-react';
 
+const FALLBACK_SENSORS: Sensor[] = [
+  { id: '1', location_id: 'l1', sensor_code: 'SN-CHE-001', sensor_name: 'Central Optical Particle Counter', source: 'SIMULATED', sensor_type: 'PM2.5 / PM10 Optical', status: 'ONLINE', city: 'Chennai', health_score: 98, last_seen: new Date().toISOString(), created_at: new Date().toISOString() },
+  { id: '2', location_id: 'l2', sensor_code: 'SN-HYD-001', sensor_name: 'HITEC Laser Aerosol Monitor', source: 'SIMULATED', sensor_type: 'Multi-Gas electrochemical', status: 'ONLINE', city: 'Hyderabad', health_score: 100, last_seen: new Date().toISOString(), created_at: new Date().toISOString() },
+  { id: '3', location_id: 'l3', sensor_code: 'SN-BLR-001', sensor_name: 'Koramangala Environmental Station', source: 'SIMULATED', sensor_type: 'AQI Integrated Telemetry', status: 'ONLINE', city: 'Bengaluru', health_score: 95, last_seen: new Date().toISOString(), created_at: new Date().toISOString() },
+  { id: '4', location_id: 'l4', sensor_code: 'SN-DEL-001', sensor_name: 'CP High-Precision Telemetry Node', source: 'SIMULATED', sensor_type: 'Beta Attenuation Monitor', status: 'ONLINE', city: 'Delhi', health_score: 92, last_seen: new Date().toISOString(), created_at: new Date().toISOString() },
+  { id: '5', location_id: 'l5', sensor_code: 'SN-BOM-001', sensor_name: 'Bandra Coastal Telemetry Monitor', source: 'SIMULATED', sensor_type: 'Optical & Electrochemical', status: 'ONLINE', city: 'Mumbai', health_score: 97, last_seen: new Date().toISOString(), created_at: new Date().toISOString() },
+];
+
 export const SensorsPage: React.FC = () => {
-  const [sensors, setSensors] = useState<Sensor[]>([]);
+  const [sensors, setSensors] = useState<Sensor[]>(FALLBACK_SENSORS);
 
   useEffect(() => {
-    apiService.getSensors().then(setSensors);
+    apiService.getSensors().then((data) => {
+      if (data && data.length > 0) setSensors(data);
+    }).catch(console.warn);
   }, []);
 
   const getStatusIcon = (status: string) => {

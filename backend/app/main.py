@@ -60,11 +60,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS Configuration — allow localhost, Vercel deployments, and wildcard origins
+# Standard compliant CORS configuration (allow_credentials=False with wildcard '*')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
