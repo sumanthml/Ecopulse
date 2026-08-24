@@ -1,12 +1,12 @@
 """
 EcoPulse Data Collector Worker
 Background worker that periodically fetches data from the configured provider
-and sends it through the full ingestion pipeline.
-
-Pipeline: Provider → FastAPI validation → Database → AQI calculation → Alerts → Realtime
+and sends it through the full ingestion pipeline. Also keeps free tier servers alive.
 """
 import asyncio
 import logging
+import urllib.request
+import ssl
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -26,21 +26,20 @@ logger = logging.getLogger(__name__)
 
 
 class DataCollector:
-    """Background data collection worker."""
+    """Background data collection worker with self keep-alive."""
 
     def __init__(self):
         self.provider: Optional[EnvironmentalDataProvider] = None
         self._running = False
         self._task: Optional[asyncio.Task] = None
+        self._keepalive_task: Optional[asyncio.Task] = None
         self.last_fetch: Optional[datetime] = None
         self.last_error: Optional[str] = None
         self.fetch_count: int = 0
         self.error_count: int = 0
 
     def initialize_provider(self):
-        """Initialize the configured data provider."""
         provider_name = settings.data_provider.lower()
-
         if provider_name == "simulator":
             self.provider = SimulatorProvider()
             logger.info("Data provider: Simulator")
@@ -48,33 +47,43 @@ class DataCollector:
             self.provider = OpenMeteoProvider()
             logger.info("Data provider: Open-Meteo")
         else:
-            logger.warning(f"Unknown provider '{provider_name}', defaulting to simulator")
             self.provider = SimulatorProvider()
 
     async def start(self):
-        """Start the background data collection loop."""
         if self._running:
-            logger.warning("Data collector already running")
             return
 
         self.initialize_provider()
         self._running = True
         self._task = asyncio.create_task(self._collection_loop())
-        logger.info(f"Data collector started (interval: {settings.data_collection_interval}s)")
+        self._keepalive_task = asyncio.create_task(self._keepalive_loop())
+        logger.info(f"Data collector & keepalive started (interval: {settings.data_collection_interval}s)")
 
     async def stop(self):
-        """Stop the data collection loop."""
         self._running = False
         if self._task:
             self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
+        if self._keepalive_task:
+            self._keepalive_task.cancel()
         logger.info("Data collector stopped")
 
+    async def _keepalive_loop(self):
+        """Self-ping loop to prevent free-tier hosts like Render from sleeping."""
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+
+        while self._running:
+            await asyncio.sleep(120)  # Ping every 2 minutes
+            try:
+                url = "https://ecopulse-backend-46fv.onrender.com/health"
+                req = urllib.request.Request(url, headers={"User-Agent": "EcoPulseKeepAlive/1.0"})
+                urllib.request.urlopen(req, context=ctx, timeout=10)
+                logger.info("Keep-alive self ping successful")
+            except Exception as e:
+                logger.warning(f"Keep-alive ping error (ignoring): {e}")
+
     async def _collection_loop(self):
-        """Main collection loop — runs periodically."""
         while self._running:
             try:
                 await self._collect_all_locations()
@@ -86,13 +95,10 @@ class DataCollector:
             await asyncio.sleep(settings.data_collection_interval)
 
     async def _collect_all_locations(self):
-        """Fetch data for all active locations."""
         if async_session_factory is None:
-            logger.warning("Database not configured — skipping collection")
             return
 
         async with async_session_factory() as db:
-            # Get all locations
             result = await db.execute(select(Location))
             locations = result.scalars().all()
 
@@ -105,18 +111,13 @@ class DataCollector:
             await db.commit()
 
     async def _collect_for_location(self, db: AsyncSession, location: Location):
-        """Fetch and ingest data for a single location."""
         if self.provider is None:
             return
 
-        # Fetch from provider
         reading = await self.provider.fetch_latest(location.latitude, location.longitude)
-
         if reading is None:
-            logger.warning(f"No data from provider for {location.name}")
             return
 
-        # Find active sensor for this location
         sensor_result = await db.execute(
             select(Sensor)
             .where(Sensor.location_id == location.id, Sensor.status != "MAINTENANCE")
@@ -124,12 +125,9 @@ class DataCollector:
             .limit(1)
         )
         sensor = sensor_result.scalar_one_or_none()
-
         if not sensor:
-            logger.warning(f"No active sensor for {location.name}")
             return
 
-        # Send through ingestion pipeline
         result = await ingest_reading(
             db=db,
             sensor_id=sensor.id,
@@ -146,14 +144,12 @@ class DataCollector:
         )
 
     def set_scenario(self, scenario: str):
-        """Change simulator scenario (only works with SimulatorProvider)."""
         if isinstance(self.provider, SimulatorProvider):
             self.provider.set_scenario(scenario)
             return True
         return False
 
     def get_status(self) -> dict:
-        """Get collector status."""
         return {
             "running": self._running,
             "provider": self.provider.name if self.provider else None,
@@ -166,5 +162,4 @@ class DataCollector:
         }
 
 
-# Singleton
 data_collector = DataCollector()

@@ -20,6 +20,31 @@ export const LiveMonitoringPage: React.FC = () => {
   const [readings, setReadings] = useState<PollutionReading[]>([]);
   const [scenario, setScenario] = useState('normal');
 
+  useEffect(() => {
+    const tickInterval = setInterval(() => {
+      setLocations((prevLocs) => {
+        return prevLocs.map((loc) => {
+          const deltaPm25 = (Math.random() - 0.48) * 3.5;
+          const deltaPm10 = (Math.random() - 0.48) * 4.2;
+          const newPm25 = parseFloat(Math.max(10, (loc.pm25 || 80) + deltaPm25).toFixed(1));
+          const newPm10 = parseFloat(Math.max(20, (loc.pm10 || 120) + deltaPm10).toFixed(1));
+          const currentAqi = loc.aqi || 150;
+          const newAqi = Math.max(20, Math.round(currentAqi + (Math.random() - 0.48) * 2));
+          return {
+            ...loc,
+            aqi: newAqi,
+            pm25: newPm25,
+            pm10: newPm10,
+            no2: parseFloat(((loc.no2 || 50) + (Math.random() - 0.48) * 1.5).toFixed(1)),
+            so2: parseFloat(((loc.so2 || 7) + (Math.random() - 0.48) * 0.4).toFixed(1)),
+          };
+        });
+      });
+    }, 1500);
+
+    return () => clearInterval(tickInterval);
+  }, []);
+
   const loadData = async () => {
     try {
       const locs = await apiService.getCurrentPollution();
@@ -48,7 +73,7 @@ export const LiveMonitoringPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
+    const interval = setInterval(loadData, 2000);
     return () => clearInterval(interval);
   }, []);
 

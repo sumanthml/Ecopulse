@@ -25,13 +25,40 @@ const INITIAL_SUMMARY: DashboardSummary = {
   insights: [
     { id: '1', location_id: 'loc1', title: 'Bengaluru Air Quality Assessment', content: 'Air quality in Koramangala is Unhealthy with AQI of 164. PM2.5 levels are elevated. Outdoor exercise should be reduced.', severity: 'MODERATE', insight_type: 'daily_report', generated_by: 'GROQ_AI', created_at: new Date().toISOString() },
   ],
-  system: { collector: { running: true, provider: 'Demo Sensor Simulator', source_type: 'SIMULATED', fetch_count: 100, error_count: 0, interval_seconds: 30 }, timestamp: new Date().toISOString() },
+  system: { collector: { running: true, provider: 'Demo Sensor Simulator', source_type: 'SIMULATED', fetch_count: 100, error_count: 0, interval_seconds: 5 }, timestamp: new Date().toISOString() },
 };
 
 export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary>(INITIAL_SUMMARY);
   const [selectedPollutant, setSelectedPollutant] = useState('pm25');
   const [liveReadings, setLiveReadings] = useState<PollutionReading[]>([]);
+
+  useEffect(() => {
+    const tickInterval = setInterval(() => {
+      setSummary((prev) => {
+        if (!prev || !prev.locations || prev.locations.length === 0) return prev;
+        const updatedLocations = prev.locations.map((loc) => {
+          const deltaPm25 = (Math.random() - 0.48) * 3.5;
+          const deltaPm10 = (Math.random() - 0.48) * 4.2;
+          const newPm25 = parseFloat(Math.max(10, (loc.pm25 || 80) + deltaPm25).toFixed(1));
+          const newPm10 = parseFloat(Math.max(20, (loc.pm10 || 120) + deltaPm10).toFixed(1));
+          const currentAqi = loc.aqi || 150;
+          const newAqi = Math.max(20, Math.round(currentAqi + (Math.random() - 0.48) * 2));
+          return {
+            ...loc,
+            aqi: newAqi,
+            pm25: newPm25,
+            pm10: newPm10,
+            temperature: parseFloat(((loc.temperature || 28) + (Math.random() - 0.5) * 0.2).toFixed(1)),
+            humidity: parseFloat(((loc.humidity || 70) + (Math.random() - 0.5) * 0.4).toFixed(1)),
+          };
+        });
+        return { ...prev, locations: updatedLocations };
+      });
+    }, 1500);
+
+    return () => clearInterval(tickInterval);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -55,7 +82,7 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
+    const interval = setInterval(loadData, 2000);
     return () => clearInterval(interval);
   }, []);
 
