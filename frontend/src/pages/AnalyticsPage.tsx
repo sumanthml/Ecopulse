@@ -22,17 +22,18 @@ const BASELINE_CORRELATIONS: Correlation[] = [
   { param1: 'pm25', param2: 'humidity', correlation: 0.38, strength: 'Weak', samples: 450 },
 ];
 
+const DEFAULT_SUMMARY: AnalyticsSummary = {
+  pm25: { mean: 83.4, median: 81.0, min: 55.0, max: 128.0, std_dev: 14.2, p95: 112.0, count: 450 },
+  pm10: { mean: 158.9, median: 155.0, min: 90.0, max: 240.0, std_dev: 28.5, count: 450 },
+  no2: { mean: 55.5, median: 52.0, min: 20.0, max: 95.0, std_dev: 11.0, count: 450 },
+  temperature: { mean: 31.0, median: 30.5, min: 25.0, max: 36.0, std_dev: 2.5, count: 450 },
+  humidity: { mean: 75.9, median: 76.0, min: 50.0, max: 95.0, std_dev: 8.2, count: 450 },
+};
+
 export const AnalyticsPage: React.FC = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [selectedLoc, setSelectedLoc] = useState<string>('');
-  const [summary, setSummary] = useState<AnalyticsSummary | null>({
-    pm25: { mean: 83.4, min: 55.0, max: 128.0, std_dev: 14.2, p95: 112.0, count: 450 },
-    pm10: { mean: 158.9, min: 90.0, max: 240.0, std_dev: 28.5, count: 450 },
-    no2: { mean: 55.5, min: 20.0, max: 95.0, std_dev: 11.0, count: 450 },
-    temperature: { mean: 31.0, count: 450 },
-    humidity: { mean: 75.9, count: 450 },
-    total_readings: 450,
-  });
+  const [summary, setSummary] = useState<AnalyticsSummary | null>(DEFAULT_SUMMARY);
   const [trends, setTrends] = useState<TrendData[]>(BASELINE_TRENDS);
   const [correlations, setCorrelations] = useState<Correlation[]>(BASELINE_CORRELATIONS);
   const [pollutant, setPollutant] = useState('pm25');
@@ -41,8 +42,7 @@ export const AnalyticsPage: React.FC = () => {
     apiService.getLocations().then((locs) => {
       if (locs && locs.length > 0) {
         setLocations(locs);
-        const firstId = locs[0].id || locs[0].location_id || '';
-        setSelectedLoc(firstId);
+        setSelectedLoc(locs[0].id);
       }
     }).catch(console.warn);
   }, []);
@@ -78,14 +78,11 @@ export const AnalyticsPage: React.FC = () => {
           onChange={(e) => setSelectedLoc(e.target.value)}
           className="select text-sm w-48"
         >
-          {locations.map((l) => {
-            const id = l.id || l.location_id || '';
-            return (
-              <option key={id} value={id}>
-                {l.name || l.location_name} ({l.city})
-              </option>
-            );
-          })}
+          {locations.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name} ({l.city})
+            </option>
+          ))}
         </select>
       </div>
 
