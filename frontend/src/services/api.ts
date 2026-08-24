@@ -16,8 +16,19 @@ import type {
   SystemHealth,
 } from '../types';
 
+// Dynamically use environment variable VITE_API_BASE_URL, or fall back to Render backend URL on Vercel
+const getBaseUrl = () => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    return 'https://ecopulse-backend-46fv.onrender.com';
+  }
+  return ''; // Default to relative URL for local development proxy
+};
+
 const api = axios.create({
-  baseURL: '', // Relative path — relies on Vite dev proxy
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
