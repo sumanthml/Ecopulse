@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     # Demo Mode
     demo_mode: bool = Field(default=True, alias="DEMO_MODE")
 
-    # Data Collection Interval (seconds)
-    data_collection_interval: int = Field(default=30, alias="DATA_COLLECTION_INTERVAL")
+    # Data Collection Interval (seconds) — high-frequency 5s loop
+    data_collection_interval: int = Field(default=5, alias="DATA_COLLECTION_INTERVAL")
 
     # CORS Settings — accepts string '*', comma-separated string, or list
     cors_origins: Union[List[str], str] = Field(

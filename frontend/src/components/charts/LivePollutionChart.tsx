@@ -19,7 +19,6 @@ const POLLUTANTS = [
   { key: 'humidity', name: 'Humidity', unit: '%', color: '#6366f1' },
 ];
 
-// Generate smooth 12-point baseline telemetry stream if live list is initializing
 const generateBaselineReadings = (pollutant: string) => {
   const baseValueMap: Record<string, number> = {
     pm25: 78.5,
@@ -34,12 +33,11 @@ const generateBaselineReadings = (pollutant: string) => {
   const base = baseValueMap[pollutant] || 50;
 
   const now = new Date();
-  return Array.from({ length: 12 }).map((_, i) => {
-    const time = new Date(now.getTime() - (11 - i) * 3 * 60 * 1000);
-    // Organic wave variation
-    const variation = Math.sin(i * 0.6) * (base * 0.15) + (Math.random() - 0.5) * (base * 0.05);
+  return Array.from({ length: 15 }).map((_, i) => {
+    const time = new Date(now.getTime() - (14 - i) * 5 * 1000);
+    const variation = Math.sin(i * 0.8) * (base * 0.12) + (Math.random() - 0.5) * (base * 0.04);
     return {
-      time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       value: Math.max(1, parseFloat((base + variation).toFixed(1))),
     };
   });
@@ -55,8 +53,8 @@ export const LivePollutionChart: React.FC<LiveChartProps> = ({
   const chartData = readings.length > 0
     ? readings.map((r) => ({
         time: r.timestamp
-          ? new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : '--:--',
+          ? new Date(r.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          : '--:--:--',
         value: (r as any)[selectedPollutant] ?? 0,
       }))
     : generateBaselineReadings(selectedPollutant);
@@ -98,14 +96,16 @@ export const LivePollutionChart: React.FC<LiveChartProps> = ({
                 <stop offset="95%" stopColor={currentPollutant.color} stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-            <XAxis dataKey="time" stroke="#64748b" fontSize={11} />
-            <YAxis stroke="#64748b" fontSize={11} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <XAxis dataKey="time" stroke="#64748b" tick={{ fontSize: 10 }} />
+            <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
             <Tooltip
-              contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '8px' }}
-              labelStyle={{ color: '#94a3b8' }}
-              itemStyle={{ color: currentPollutant.color }}
-              formatter={(value: any) => [`${value} ${currentPollutant.unit}`, currentPollutant.name]}
+              contentStyle={{
+                backgroundColor: '#0f172a',
+                borderColor: '#334155',
+                borderRadius: '0.5rem',
+                color: '#f8fafc',
+              }}
             />
             <Area
               type="monotone"
@@ -114,6 +114,7 @@ export const LivePollutionChart: React.FC<LiveChartProps> = ({
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorValue)"
+              isAnimationActive={true}
             />
           </AreaChart>
         </ResponsiveContainer>
