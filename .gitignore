@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+backend/venv/
+venv/
+
+# Environment variables & secrets (NEVER PUSH SECRETS)
+.env
+backend/.env
+frontend/.env
+*.env.local
+
+# Build outputs
+frontend/dist/
+backend/models_cache/
+*.pyc
+__pycache__/
+
+# System files
+.DS_Store
+*.log

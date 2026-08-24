@@ -1,0 +1,48 @@
+# EcoPulse Backend Dependencies
+# Python 3.11+
+
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+
+# Data Validation
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# HTTP Client
+httpx==0.28.1
+
+# Data Science / ML
+pandas==2.2.3
+numpy==2.2.1
+scikit-learn==1.6.1
+
+# AI
+groq==0.15.0
+
+# Auth / Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+
+# Supabase
+supabase==2.11.0
+
+# Utilities
+python-dotenv==1.0.1
+python-dateutil==2.9.0
+apscheduler==3.10.4
+
+# PDF Generation
+reportlab==4.2.5
+
+# Testing
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1
