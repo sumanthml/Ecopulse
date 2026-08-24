@@ -1,73 +1,63 @@
 """
-EcoPulse Core Configuration
-Centralized settings loaded from environment variables.
+EcoPulse Backend Configuration
+Uses Pydantic BaseSettings to load and validate environment variables.
 """
-from pydantic_settings import BaseSettings
 from typing import Optional
-import os
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from .env file or environment variables."""
+    """Application settings with environment variable auto-loading."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # Application
-    app_name: str = "EcoPulse"
-    app_env: str = "development"
-    debug: bool = True
-    host: str = "0.0.0.0"
-    port: int = 8000
+    app_env: str = Field(default="development", alias="APP_ENV")
+    secret_key: str = Field(default="ecopulse_secret_key_change_in_production_2026", alias="SECRET_KEY")
 
     # Supabase
-    supabase_url: str = ""
-    supabase_service_role_key: str = ""
-    supabase_anon_key: str = ""
+    supabase_url: Optional[str] = Field(default=None, alias="SUPABASE_URL")
+    supabase_anon_key: Optional[str] = Field(default=None, alias="SUPABASE_ANON_KEY")
+    supabase_service_role_key: Optional[str] = Field(default=None, alias="SUPABASE_SERVICE_ROLE_KEY")
 
     # Database
-    database_url: str = ""
+    database_url: str = Field(
+        default="postgresql+asyncpg://postgres:postgres@localhost:5432/ecopulse",
+        alias="DATABASE_URL",
+    )
 
     # Groq AI
-    groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_api_key: Optional[str] = Field(default=None, alias="GROQ_API_KEY")
+    groq_model: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
 
     # Data Provider
-    data_provider: str = "simulator"  # openmeteo | openaq | simulator
-    data_provider_api_key: str = ""
+    data_provider: str = Field(default="simulator", alias="DATA_PROVIDER")
+    data_provider_api_key: Optional[str] = Field(default=None, alias="DATA_PROVIDER_API_KEY")
 
     # Demo Mode
-    demo_mode: bool = True
+    demo_mode: bool = Field(default=True, alias="DEMO_MODE")
 
-    # Data Collection
-    data_collection_interval: int = 60  # seconds
+    # Data Collection Interval (seconds)
+    data_collection_interval: int = Field(default=30, alias="DATA_COLLECTION_INTERVAL")
 
-    # CORS
-    cors_origins: str = "http://localhost:5173"
-
-    @property
-    def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",")]
-
-    @property
-    def is_production(self) -> bool:
-        return self.app_env == "production"
+    # CORS Settings
+    cors_origins: list[str] = Field(
+        default=["*"],
+        alias="CORS_ORIGINS",
+    )
 
     @property
     def has_database(self) -> bool:
-        return bool(self.database_url)
+        return bool(self.database_url and "localhost" not in self.database_url)
 
     @property
     def has_groq(self) -> bool:
         return bool(self.groq_api_key)
 
-    @property
-    def has_supabase(self) -> bool:
-        return bool(self.supabase_url and self.supabase_service_role_key)
 
-    model_config = {
-        "env_file": ".env",
-        "env_file_encoding": "utf-8",
-        "case_sensitive": False,
-    }
-
-
-# Singleton settings instance
 settings = Settings()
