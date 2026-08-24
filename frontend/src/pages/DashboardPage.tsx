@@ -75,6 +75,7 @@ const FALLBACK_SUMMARY: DashboardSummary = {
   alerts: [
     {
       id: 'a1',
+      location_id: '1',
       title: 'PM2.5 Concentration High',
       severity: 'HIGH',
       parameter: 'pm25',
@@ -91,18 +92,24 @@ const FALLBACK_SUMMARY: DashboardSummary = {
       content: 'Elevated PM2.5 concentrations observed across industrial zones. Respiratory sensitive groups advised to restrict outdoor activity.',
       severity: 'WARNING',
       insight_type: 'general',
+      generated_by: 'GROQ_AI',
       created_at: new Date().toISOString(),
     },
   ],
   system: {
-    collector: { running: true, provider: 'Demo Sensor Simulator' },
+    collector: {
+      running: true,
+      provider: 'Demo Sensor Simulator',
+      fetch_count: 100,
+      error_count: 0,
+      interval_seconds: 30,
+    },
     timestamp: new Date().toISOString(),
   },
 };
 
 export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary>(FALLBACK_SUMMARY);
-  const [loading, setLoading] = useState(false);
   const [selectedPollutant, setSelectedPollutant] = useState('pm25');
   const [liveReadings, setLiveReadings] = useState<PollutionReading[]>([]);
 
@@ -127,12 +134,10 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // Poll backend every 5 seconds to guarantee live sync
     const interval = setInterval(loadData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Listen to live readings from Supabase
   useRealtimeSubscription<PollutionReading>('pollution_readings', (newReading) => {
     setLiveReadings((prev) => [...prev.slice(-29), newReading]);
     loadData();
