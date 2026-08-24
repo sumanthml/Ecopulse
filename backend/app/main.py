@@ -5,7 +5,7 @@ Production-ready FastAPI application setup with CORS, middleware, and routers.
 from contextlib import asynccontextmanager
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -79,6 +79,12 @@ app.include_router(alerts_router)
 app.include_router(analytics_router)
 app.include_router(prediction_router)
 app.include_router(ai_insight_router)
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Silence browser favicon 404 requests."""
+    return Response(status_code=204)
 
 
 @app.get("/", tags=["Health"])
