@@ -16,15 +16,20 @@ import type {
   SystemHealth,
 } from '../types';
 
-// Dynamically use environment variable VITE_API_BASE_URL, or fall back to Render backend URL on Vercel
+// In production or on Vercel, ALWAYS point directly to the live Render backend URL
+const RENDER_BACKEND_URL = 'https://ecopulse-backend-46fv.onrender.com';
+
 const getBaseUrl = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
-    return 'https://ecopulse-backend-46fv.onrender.com';
+  if (import.meta.env.PROD) {
+    return RENDER_BACKEND_URL;
   }
-  return ''; // Default to relative URL for local development proxy
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return RENDER_BACKEND_URL;
+  }
+  return ''; // Relative URL for local dev Vite proxy
 };
 
 const api = axios.create({
