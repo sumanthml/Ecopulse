@@ -16,8 +16,7 @@ from app.api.pollution import router as pollution_router
 from app.api.sensors import locations_router, sensors_router
 from app.api.alerts import router as alerts_router
 from app.api.analytics import router as analytics_router
-from app.api.prediction import router as prediction_router
-from app.api.ai_insight import router as ai_insight_router
+from app.api.prediction import predictions_router, insights_router
 from app.workers.data_collector import data_collector
 
 # Configure logging
@@ -77,8 +76,8 @@ app.include_router(locations_router)
 app.include_router(sensors_router)
 app.include_router(alerts_router)
 app.include_router(analytics_router)
-app.include_router(prediction_router)
-app.include_router(ai_insight_router)
+app.include_router(predictions_router)
+app.include_router(insights_router)
 
 
 @app.get("/favicon.ico", include_in_schema=False)

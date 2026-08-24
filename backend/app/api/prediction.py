@@ -16,6 +16,9 @@ from app.schemas.insight import InsightGenerateRequest
 predictions_router = APIRouter(prefix="/api/predictions", tags=["Predictions"])
 insights_router = APIRouter(prefix="/api/ai-insights", tags=["AI Insights"])
 
+# Alias for main.py import compatibility
+router = predictions_router
+
 
 # ── Prediction Routes ──
 
